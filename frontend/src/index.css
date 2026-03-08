@@ -1,0 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0c0c0f;
+  --surface: #13131a;
+  --border: #1e1e2e;
+  --accent: #4f9cf9;
+  --accent-dim: rgba(79, 156, 249, 0.12);
+  --text: #e2e2f0;
+  --muted: #5a5a7a;
+  --high: #f97583;
+  --med: #f4b45a;
+  --low: #79c0ff;
+  --approve: #56d364;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+}
+
+#root {
+  max-width: 867px;
+  margin: 0 auto;
+  padding: 64px 24px;
+}
