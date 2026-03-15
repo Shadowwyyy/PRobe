@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import ReviewCard from './ReviewCard'
 import PRMeta from './PRMeta'
 import Skeleton from './Skeleton'
@@ -12,7 +12,17 @@ export default function App() {
   const [err, setErr] = useState(null)
   const [panelOpen, setPanelOpen] = useState(false)
   const [filters, setFilters] = useState({ high: true, medium: true, low: true })
+  const [ghUser, setGhUser] = useState(null)
   const { history, save, remove } = useHistory()
+
+  useEffect(() => {
+    const t = localStorage.getItem('gh_token')
+    if (!t) return
+    fetch(`http://localhost:8000/auth/user?token=${t}`)
+      .then(r => r.json())
+      .then(setGhUser)
+      .catch(() => {})
+  }, [])
 
   async function submit() {
     if (!url.trim()) return
@@ -23,7 +33,7 @@ export default function App() {
       const res = await fetch('http://localhost:8000/review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pr_url: url.trim() })
+        body: JSON.stringify({ pr_url: url.trim(), token: localStorage.getItem('gh_token') || null })
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail)
@@ -77,7 +87,6 @@ export default function App() {
   }
 
   const sevColor = { high: 'var(--high)', medium: 'var(--med)', low: 'var(--low)' }
-
   const filtered = result?.findings.filter(f => filters[f.severity]) || []
 
   return (
@@ -105,33 +114,71 @@ export default function App() {
               drop a pr url. get a real review.
             </p>
           </div>
-          <button
-            onClick={() => setPanelOpen(true)}
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: 8,
-              padding: '8px 14px',
-              color: 'var(--muted)',
-              fontFamily: 'JetBrains Mono',
-              fontSize: 12,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 7
-            }}
-          >
-            history {history.length > 0 && (
-              <span style={{
-                background: 'var(--accent)',
-                color: '#fff',
-                borderRadius: 4,
-                padding: '1px 6px',
-                fontSize: 11,
-                fontWeight: 700
-              }}>{history.length}</span>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {ghUser ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <img src={ghUser.avatar} style={{ width: 26, height: 26, borderRadius: 6 }} />
+                <span style={{ fontFamily: 'JetBrains Mono', fontSize: 12, color: 'var(--muted)' }}>
+                  {ghUser.login}
+                </span>
+                <button
+                  onClick={() => { localStorage.removeItem('gh_token'); setGhUser(null) }}
+                  style={{
+                    background: 'none', border: 'none',
+                    color: 'var(--muted)', fontFamily: 'JetBrains Mono',
+                    fontSize: 11, cursor: 'pointer'
+                  }}
+                >sign out</button>
+              </div>
+) : (
+  
+    <a href="http://localhost:8000/auth/github"
+                style={{
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 8,
+                  padding: '8px 14px',
+                  color: 'var(--muted)',
+                  fontFamily: 'JetBrains Mono',
+                  fontSize: 12,
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6
+                }}
+              >
+                ⌥ sign in with github
+              </a>
             )}
-          </button>
+            <button
+              onClick={() => setPanelOpen(true)}
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 8,
+                padding: '8px 14px',
+                color: 'var(--muted)',
+                fontFamily: 'JetBrains Mono',
+                fontSize: 12,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 7
+              }}
+            >
+              history {history.length > 0 && (
+                <span style={{
+                  background: 'var(--accent)',
+                  color: '#fff',
+                  borderRadius: 4,
+                  padding: '1px 6px',
+                  fontSize: 11,
+                  fontWeight: 700
+                }}>{history.length}</span>
+              )}
+            </button>
+          </div>
         </header>
 
         <div style={{

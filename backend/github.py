@@ -7,14 +7,21 @@ def parse_pr_url(url: str) -> tuple[str, str, int]:
     pr_num = int(parts[-1])
     return owner, repo, pr_num
 
-async def fetch_pr_data(pr_url: str) -> dict:
+async def fetch_pr_data(pr_url: str, token: str | None = None) -> dict:
     owner, repo, pr_num = parse_pr_url(pr_url)
     base = f"https://api.github.com/repos/{owner}/{repo}/pulls/{pr_num}"
+
+    headers_json = {"Accept": "application/vnd.github.v3+json"}
+    headers_diff = {"Accept": "application/vnd.github.v3.diff"}
+
+    if token:
+        headers_json["Authorization"] = f"Bearer {token}"
+        headers_diff["Authorization"] = f"Bearer {token}"
 
     async with httpx.AsyncClient() as client:
         meta_res = await client.get(
             base,
-            headers={"Accept": "application/vnd.github.v3+json"},
+            headers=headers_json,
             follow_redirects=True,
             timeout=15.0,
         )
@@ -23,7 +30,7 @@ async def fetch_pr_data(pr_url: str) -> dict:
 
         diff_res = await client.get(
             base,
-            headers={"Accept": "application/vnd.github.v3.diff"},
+            headers=headers_diff,
             follow_redirects=True,
             timeout=15.0,
         )
