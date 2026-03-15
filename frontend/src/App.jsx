@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import ReviewCard from './ReviewCard'
+import PRMeta from './PRMeta'
+import Skeleton from './Skeleton'
 
 export default function App() {
   const [url, setUrl] = useState('')
@@ -109,8 +111,11 @@ export default function App() {
         </div>
       )}
 
+      {loading && <Skeleton />}
+
       {result && (
         <div>
+          <PRMeta meta={result.meta} />
           <div style={{
             display: 'flex',
             alignItems: 'center',
