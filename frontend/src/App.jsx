@@ -11,6 +11,7 @@ export default function App() {
   const [result, setResult] = useState(null)
   const [err, setErr] = useState(null)
   const [panelOpen, setPanelOpen] = useState(false)
+  const [filters, setFilters] = useState({ high: true, medium: true, low: true })
   const { history, save, remove } = useHistory()
 
   async function submit() {
@@ -41,11 +42,43 @@ export default function App() {
     setErr(null)
   }
 
+  function toggleFilter(sev) {
+    setFilters(f => ({ ...f, [sev]: !f[sev] }))
+  }
+
+  function exportMd() {
+    if (!result) return
+    const { meta, verdict, summary, findings } = result
+    let md = `# PRobe Review: ${meta.title}\n\n`
+    md += `**Repo:** ${meta.repo} · **PR:** #${meta.num} · **Author:** ${meta.author}\n`
+    md += `**Files:** ${meta.changed_files} · **+${meta.additions}** / **-${meta.deletions}**\n\n`
+    md += `## Verdict: ${verdict.replace('_', ' ')}\n\n${summary}\n\n`
+    if (findings.length === 0) {
+      md += `_No issues found._\n`
+    } else {
+      md += `## Findings\n\n`
+      findings.forEach(f => {
+        md += `### [${f.severity.toUpperCase()}] ${f.category} — ${f.file || ''}${f.line ? `:${f.line}` : ''}\n\n`
+        md += `${f.issue}\n\n`
+        md += `**Fix:** ${f.suggestion}\n\n---\n\n`
+      })
+    }
+    const blob = new Blob([md], { type: 'text/markdown' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `probe-review-${meta.repo.replace('/', '-')}-${meta.num}.md`
+    a.click()
+  }
+
   const verdictColor = {
     approve: 'var(--approve)',
     request_changes: 'var(--high)',
     needs_discussion: 'var(--med)'
   }
+
+  const sevColor = { high: 'var(--high)', medium: 'var(--med)', low: 'var(--low)' }
+
+  const filtered = result?.findings.filter(f => filters[f.severity]) || []
 
   return (
     <>
@@ -165,13 +198,14 @@ export default function App() {
         {result && (
           <div>
             <PRMeta meta={result.meta} />
+
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              marginBottom: 24
+              marginBottom: 20
             }}>
-              <p style={{ color: 'var(--muted)', fontSize: 13 }}>{result.summary}</p>
+              <p style={{ color: 'var(--muted)', fontSize: 13, flex: 1, marginRight: 16 }}>{result.summary}</p>
               <span style={{
                 fontFamily: 'JetBrains Mono',
                 fontSize: 11,
@@ -181,20 +215,69 @@ export default function App() {
                 border: `1px solid ${verdictColor[result.verdict] || 'var(--border)'}`,
                 borderRadius: 6,
                 padding: '4px 10px',
-                whiteSpace: 'nowrap',
-                marginLeft: 16
+                whiteSpace: 'nowrap'
               }}>
                 {result.verdict.replace('_', ' ')}
               </span>
             </div>
 
-            {result.findings.length === 0 ? (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: 16
+            }}>
+              <div style={{ display: 'flex', gap: 7 }}>
+                {['high', 'medium', 'low'].map(sev => (
+                  <button
+                    key={sev}
+                    onClick={() => toggleFilter(sev)}
+                    style={{
+                      background: filters[sev] ? 'rgba(255,255,255,0.05)' : 'transparent',
+                      border: `1px solid ${filters[sev] ? sevColor[sev] : 'var(--border)'}`,
+                      borderRadius: 6,
+                      padding: '4px 11px',
+                      color: filters[sev] ? sevColor[sev] : 'var(--muted)',
+                      fontFamily: 'JetBrains Mono',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      opacity: filters[sev] ? 1 : 0.5,
+                      transition: 'all 0.12s'
+                    }}
+                  >
+                    {sev}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={exportMd}
+                style={{
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 6,
+                  padding: '4px 12px',
+                  color: 'var(--muted)',
+                  fontFamily: 'JetBrains Mono',
+                  fontSize: 11,
+                  cursor: 'pointer',
+                  transition: 'color 0.12s'
+                }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--muted)'}
+              >
+                export .md
+              </button>
+            </div>
+
+            {filtered.length === 0 ? (
               <p style={{ color: 'var(--approve)', fontFamily: 'JetBrains Mono', fontSize: 13 }}>
                 ✓ no issues found
               </p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {result.findings.map((f, i) => <ReviewCard key={i} finding={f} />)}
+                {filtered.map((f, i) => <ReviewCard key={i} finding={f} />)}
               </div>
             )}
           </div>
