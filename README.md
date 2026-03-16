@@ -22,7 +22,7 @@ cd backend
 python3.11 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-echo "ANTHROPIC_API_KEY=your-key-here" > .env
+cp .env.example .env  # add your keys
 ./venv/bin/python3.11 -m uvicorn main:app --reload
 ```
 
@@ -41,11 +41,23 @@ Then open http://localhost:5173 and paste any public GitHub PR URL.
 - fetches real PR diffs from GitHub's API
 - structured review with bugs, security, performance, and style findings
 - severity levels (high / medium / low) with file + line references
+- filter findings by severity
 - PR metadata header showing title, author, files changed, additions and deletions
-- loading skeleton while review is being generated
+- loading skeleton while review generates
+- review history sidebar (persisted in localStorage)
+- export review as markdown
+- GitHub OAuth for private repo access
+
+## env vars
+
+```
+ANTHROPIC_API_KEY=
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+```
 
 ## example
 
 ```
-https://github.com/fastapi/fastapi/pull/1
+https://github.com/django/django/pull/1
 ```
